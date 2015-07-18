@@ -1,0 +1,33 @@
+Breanna DeVore-McDonald and Katie Quinn
+Prof. Ramzi Bualuan
+CSE20211.01
+15 December 2014
+Final report
+
+	For our project, we decided to recreate the arcade video game Space Invaders. From the user's perspective, the game consists of shooting, dodging, and trying to earn as many points before the alien sprites reach the user's shooter. The user starts with 3 lives, displayed as extra shooters in the upper right-hand corner. Each time the user's shooter is hit by an alien bullet, one life is taken away. When the user looses all three lives, or the aliens reach the shooter, the game closes, signifying ultimate death. When the user shoots and hits either an alien or the red spaceship, corresponding points are added to the total score in the upper left-hand corner. If the user kills all 55 aliens, the winning screen is displayed, along with the total number of points earned.
+	From the programmer's perspective, so much more is happening. In main, the first thing that happens is a call to the display menu function. In this function, two rows of asterisks are shown, with a welcome message in between. After this function, a window is opened, and the user's bullets and the aiens' bullets are initialized using the same function. In this function, a loop goes through all array values for the bullets and sets them to our chosen null value, -1. After this in main, we seed the time, and then create an infinite while loop for the rest of the main application.
+	The first thing that happens in this loop is a clear command because we are working with animation. The user's draw shooter function is called with its x and y positions, at first in a predefined location, and we use rectangle functions to make a visually pleasing shooter icon. Then, the aliens are drawn. In this function, the x and y values are hard-coded, and a subfunction to determine which sprites to draw is called. In this function, simple arithmetic is used to make a change in animation every 30 iterations. Back in main, the function to find which aliens are destoryed is called within a call to the function to display the score. In the aliensDestroyed function, a loop goes through and checks if the value of the alien is our null value or not, and returns a corresponding number. If the return value is 1, in the dispScore function, the winning message is displayed. If the return value is 0, then the dispScore function displays the current score and flushes it to the screen. After this in main, the function to print the amount of lives left is called. In this function, the number of lives left is sent in, and a for loop iterates that number and prints a corresponding number of shooters. If the number of lives reaches zero, the game closes.
+	After this beginning part of main, a large if statement dependent on the gfx_event_waiting command is used to determine whether to move the shooter, shoot, or quit. If the user presses the spacebar, the function to draw a bullet is called and its return value is set equal to the x position of the bullet. In this function, a bullet is drawn right out the tip of the user's shooter. AFter this if statement in main is a series of fors and ifs that update the current icons on the screen. First, our dx is added to the distance of each alien from the starting value to simulate the aliens moving with a velocity. If the aliens reach the edge of the screen, the velocity is multiplied by negative one to turn the aliens to the other direction. When the aliens reach the edge of the screen, they also move down a row as well. After this, a for loop is used to move the user;s bullet if it exists. The moveBullet function is called, which moves the bullet one length above where it was before. After this, the checkBullet function is called to check if the bullet is past the screen. After this, an if statement checks if the aliens are hit, and updates the score, In the checkifHitAliens function, a triple nested for loop goes through and compares the coordinates of the user's bullet with the locations of the aliens. If the coordinates match, then the subfunctions to draw explosions and remove aliens is called, along with the bullet initialization function again. In the draw explosion subfunction, the color is determined by a value passed into the function, and then the explosion is drawn using gfx_fill_rectangle. In the removeAlien function, the value of the alien is set to a coordinate off of the screen. 
+	Back in main, an if statement decides if a random red spaceship should come across the screen or not. The firs function called is checkShip, which checks if there is already a spaceship on the screen. If there is, then the null value is returned, because only one spaceship can be on the screen at a time. If the null value is returned, then a random number from 0 to 10,000 is assigned to the possible new ship. If that random number is greater than 9,950, then the ship can be drawn. In the following if statement, if there exists a spaceship on the screen, then the moveSpaceship function is called, and the score is updated. In the movespaceship function, a subfunction is called to with the rectangle commands to draw the spaceship.
+	In a for loop back in main, a function to decide if the aliens shoot is called. This function finds the bottom-most alien in each column, and returns each one in a for loop.Then, in main, a random number from 0 to 100,000 is assigned to each alien. If their number is greater than 98,000, then they shoot and the drawAlienBullet is called. In this function, a line is drawn right below the alien that shot it. After this in main, a for loop checks if the alien bullet exists, and if it does, then it is moved down a length. Also, the function that checks if the user is hit is called. In this function, the coordinates of the alien bullets are compared to the current coordinates of the user's shooter, this function returns an integer corresponding to eache case. If the user is hit, then the function returns a 1 and the bullet initialization is called and the number of lives is decremented using a simple subfunction. After this, the checkBullet is called to check if the bullets have left the screen or not.
+	To evaluate for correctness, we compiled and ran our code often and at every step of the project. At each instance, we checked every scenario possible at that time in coding, and if our code did not work right, we backtracked to find the error. Once we isolated the error, it was easy to print values and see where the code was going awry
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

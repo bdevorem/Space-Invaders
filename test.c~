@@ -1,0 +1,42 @@
+test.c
+
+
+				if(Bnum>9) Bnum=-1;
+				Bnum++;
+				xposB[Bnum] = drawBullet(xposS);
+
+
+
+
+
+		if(Bnum != -1){
+			for(i=0;i<Bnum;i++){
+				dy[i] += 2;
+				
+				if(xposB[i] != -1){
+					moveBullet(xposB[i], dy[i]);
+					if(dy[i] >=475){
+						dy[i] = 0;
+						Bnum--;
+						xposB[i] = -1;
+					}
+				}
+			}
+		}
+
+
+
+	/*if (count<10) return 2;
+	else if (count>10){
+		 if (*count>20){
+		 count = 0;
+		}
+		 return 1;
+	}*/
+
+//	gfx_ellipse(posS[0], posS[1], 33, 15);
+	/*for(i=0;i<33;i++){
+		for(j=0;j<15;j++){
+			gfx_ellipse(posS[0], posS[1], i, j);	
+		}
+	}*/

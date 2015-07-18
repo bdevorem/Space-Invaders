@@ -1,0 +1,717 @@
+//Breanna DeVore-McDonald and Katie Quinn
+//Ramzi Bualuan
+//CSE 20211.01
+//14 December 2014
+//final.c aka the Best Untrademarked Space Inavders Game Ever
+
+#include "gfx3.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+#define SIZEY 500
+#define SIZEX 800
+#define YPOS 475
+
+void uShooter(int xposS);
+int drawAliens(int xdist, int ydist,int count, int aliens[2][55]);
+int drawBullet(int xposS);//returns x value
+void moveBullet(int posB[2][2]);
+void initializeBullets(int B[2][2]);
+// need a live counter function
+void checkBullet(int B[2][2],int i); //check if bullet is past y direction
+void drawSpaceship(int posS[2]);
+void moveSpaceship(int posS[2]);
+int checkShip(int posS[2]);
+void draw_first_Sprite(int x, int y);
+void draw_first_Sprite2(int x, int y);
+void draw_second_Sprite(int x, int y);
+void draw_second_Sprite2(int x, int y);
+void draw_third_Sprite2(int x, int y);
+void draw_third_Sprite(int x, int y);
+int determineSprite(int count);
+void pixelShip(int x, int y);
+int drawAlienBullet(int aliens[2][55], int k);
+void moveAlienBullet(int AposB[2][2]);
+void drawExplosion(int x, int y, int i); 
+void liveGraphics(int lives); // displays the number of lives still remaining
+void decLives(int *lives); //return 0 if no lives, 1 if lives way to break program
+int checkifHitAliens(int aliens[2][55],int posB[2][2]); // check to see if Aliens are hit
+void removeAlien(int aliens[2][55], int i);// sets alien to null value
+void updateScore(int *score,int i); //updates score using pointer i is whether ship or alien hit
+int checkifHitUser(int xposS,int AposB[2][2]); // check to see if user is hit
+int checkifHitShip(int posS[2],int posB[2][2]); // check to see if spaceship is hit
+int DoesAlienShoot(int aliens[2][55], int k);
+void dispScore(int score,int choice); // displays score, winning option doesn't work dependant on vvvvv
+int AliensDestroyed(int aliens[2][55]);
+
+//new function
+void dispMenu(void);//displays menu/instructions to user on command line
+
+int main(){
+	int xposS = 370; //position of user
+	char c; //user input
+	int xdist = 0, ydist =0; //distance of movement
+	int dx = 2; //velocity
+	int posB[2][2] = {0}; //user bullet position
+	int AposB[2][2] = {0}; //alien bullet position
+	unsigned int i, j; //for loops
+	int posS[2]; //position of red spaceship
+	int count = 0;//changed to count iterations
+	int aliens[2][55] = {}; //stores alien positions
+	int k; //incrementer because 11 for loops are too much
+	int AShoot; //if aliens shoot
+	int lives=3; //originally have three lives
+	int score=0; //user's score
+
+	dispMenu(); //display the user menu in command line
+
+	gfx_open(SIZEX, SIZEY, "Space Invaders"); //open window
+	initializeBullets(posB); //initializations
+	initializeBullets(AposB);
+
+	srand(time(NULL)); //seed time
+	
+	
+	while(true){ //infinite loop
+		gfx_clear(); //clear screen
+		uShooter(xposS); //user moving around yayy
+		count=drawAliens(xdist, ydist,count, aliens); //draw the aliens, count determines image
+
+
+		dispScore(score,AliensDestroyed(aliens)); //display the score
+		liveGraphics(lives);// print lives on the top right of screen 
+		if (lives <= 0) return 0; //if user has died for reals, game over
+
+		if(gfx_event_waiting()){ //if true
+			c = gfx_wait(); //find choice
+			if (c == 'b'){ //left
+				xposS-=10;
+				if (xposS <= 0) xposS = 0;
+			}else if (c == 'n'){ //right
+				xposS +=10;
+				if (xposS >= SIZEX-30) xposS = SIZEX-30;
+			}else if (c == ' '){ //shoot
+				for(i=0; i<2; i++){
+					if(posB[0][i] == -1){ //draw the bullet
+						posB[0][i] = drawBullet(xposS); 
+						posB[1][i] = YPOS-9;
+					}
+				}
+			}else if (c == 'q') return 0; //quit		
+			else continue;
+			
+		}
+		
+		xdist+=dx; //increase dx
+		if(xdist>=370 || xdist <=-100) dx*=-1; //edges of screen
+		if(xdist == 370 || xdist ==-100) ydist +=5;
+		if(ydist == 225) return 0; //if aliens reach user, break	
+
+		
+		for(j=0; j<2; j++){
+			if(posB[0][j] != -1){
+				moveBullet(posB); //move the bullet if it exists	
+			}
+			checkBullet(posB,j); //checks location
+		}
+
+		if (checkifHitAliens(aliens,posB) == 1){ //check if aliens are hit
+			updateScore(&score,1);
+
+		}
+
+		if(checkShip(posS) == 0){ //decide if spaceship should come across
+			if((rand() % 10000) >= 9950){
+				drawSpaceship(posS);	
+			}
+		}
+		
+		if (checkShip(posS) == 1) { //if it exists, move it
+			moveSpaceship(posS);
+			if(checkifHitShip(posS,posB) == 1){
+				updateScore(&score,2); //if hit, update score
+			}
+		}
+
+		for(i=0;i<10;i++){ //goes through all 11 for loops in a simpler way
+			AShoot = DoesAlienShoot(aliens, i); //decide which aliens shoot
+
+			if(AShoot != -1){ //null value from doesalienshoot fucntion
+				if((rand() % 100000) > 98000){
+					//call alien bullet function
+					for(k=0; k<2; k++){
+						if(AposB[0][k] == -1){
+							AposB[0][k] = drawAlienBullet(aliens, AShoot);
+							AposB[1][k] = aliens[0][AShoot]+9;
+						}
+					}
+				}
+			}
+		}
+		for(j=0; j<2; j++){
+			if(AposB[0][j] != -1){ //if alien bullet exists, move it
+				moveAlienBullet(AposB);
+	
+				if( checkifHitUser(xposS,AposB) == 1){
+					initializeBullets(AposB);
+					decLives(&lives); //decrement lives if hit
+				}
+			}
+			checkBullet(AposB,j);
+		}
+
+
+		usleep(50000); //pause screen
+		gfx_flush(); //flush output
+	}
+}//end main
+
+int DoesAlienShoot(int aliens[2][55], int k){ //decides which aliens shoot
+	unsigned int i;
+
+	for(i=(44+k); i>(0+k); i-=11){ //only bottom-most aliens shoot
+		if(aliens[0][i] < 10000){
+		 	return i;
+		}
+	}
+
+	return -1; //if there are no aliens, return null value
+}
+
+int drawAlienBullet(int aliens[2][55], int k){ //draws the alien's bullet
+	gfx_color(255, 255, 255);
+	gfx_line(aliens[1][k]+10, aliens[0][k], aliens[1][k]+10, aliens[0][k]+9); 
+	gfx_flush();
+
+	return aliens[1][k]+10;
+}
+
+void moveAlienBullet(int AposB[2][2]){
+	unsigned int j;
+	int temp;
+
+	for(j=0;j<2;j++){ //move the alien bullet
+		if(AposB[0][j] != -1){
+			temp = AposB[1][j]+9;
+			gfx_color(255, 255, 255);
+			gfx_line(AposB[0][j], AposB[1][j], AposB[0][j], temp);
+			AposB[1][j] = temp;
+			gfx_flush();
+			checkBullet(AposB,j);
+		}
+	}
+	gfx_flush();
+}
+
+int checkShip(int posS[2]){ //check if ship is within bounds
+	if(posS[0] != 900){ //if it is this value, then there is no spaceship on screen at this time
+		if(posS[0] <=820 && posS[0] >= 0){ //if it is on the screen, return 1
+			return 1;	
+		}else if(posS[0] <= 0){
+			posS[0] = 900; //once it moves off, there is no longer a spaceship on the screen
+			return 0;
+		}
+	}else return 0;
+}
+void drawSpaceship(int posS[2]){ //draw the spaceship
+	unsigned int i,j;
+	gfx_color(255,0,0);
+	
+	posS[0] = 820;
+	posS[1]=60;
+	pixelShip(posS[0], posS[1]); //call additional drawing function
+
+	gfx_flush();
+}
+void moveSpaceship(int posS[2]){ //move the spaceship along its x value
+	unsigned int i,j;
+	gfx_color(255,0,0);
+
+	posS[0]-=5;
+	pixelShip(posS[0], posS[1]);
+
+	gfx_flush();
+}
+
+void pixelShip(int x, int y){ //draw the pretty spaceship
+	gfx_color(255,0,0);// red
+
+	gfx_fill_rectangle(x+12,y,8,2);
+	gfx_fill_rectangle(x+6,y+2,20,2);
+	gfx_fill_rectangle(x+4,y+4,24,2);
+	gfx_fill_rectangle(x+2,y+6,4,2);
+	gfx_fill_rectangle(x+8,y+6,4,2);
+	gfx_fill_rectangle(x+14,y+6,4,2);
+	gfx_fill_rectangle(x+20,y+6,4,2);
+	gfx_fill_rectangle(x+26,y+6,4,2);
+	gfx_fill_rectangle(x,y+8,32,2);
+	gfx_fill_rectangle(x+4,y+10,6,2); 
+	gfx_fill_rectangle(x+14,y+10,4,2);
+	gfx_fill_rectangle(x+22,y+10,6,2);
+	gfx_fill_rectangle(x+6,y+12,2,2);
+	gfx_fill_rectangle(x+24,y+12,2,2);
+
+	gfx_flush();
+}
+void initializeBullets(int B[2][2]){ //initialization
+	unsigned int i,j;
+
+	for(i=0; i<2; i++){
+		for(j=0;j<2;j++){
+			B[i][j] = -1;
+		}
+	}
+}
+
+int drawBullet(int xposS){ //return x pos of B
+	gfx_color(24, 238, 0);
+	gfx_line(xposS+15, YPOS, xposS+15, YPOS-9); 
+	gfx_flush();
+
+	return xposS +15;
+}
+
+void moveBullet(int posB[2][2]){ //move the user's bullet along the y axis
+	unsigned int j;
+	int temp;
+
+	gfx_color(24, 238, 0);
+	for(j=0;j<2;j++){
+		if(posB[0][j] != -1){
+			temp = posB[1][j]-9;
+			gfx_line(posB[0][j], posB[1][j], posB[0][j], temp);
+			posB[1][j] = temp;
+			gfx_flush();
+			checkBullet(posB,j);
+		}
+	}
+	gfx_flush();
+}
+
+void checkBullet(int B[2][2],int i){ //check if bullet is past y direction
+	if(B[1][i] <= 0 || B[1][i] >= SIZEY){
+		B[0][i] = -1;
+		B[1][i] = -1;
+	}
+}
+
+int drawAliens(int xdist, int ydist,int count, int aliens[2][55]){
+	unsigned int i, j;
+	bool temp = true;
+
+	//hard code y values
+	for(i=0; i<=10; i++){
+		if(aliens[1][i] < 10000){ //only change it if it hasn't been killed
+			aliens[0][i] = 100 + ydist;
+		}
+	}
+	for(i=11; i<=21; i++){
+		if(aliens[1][i] < 10000){
+			aliens[0][i] = 100 + ydist+30;
+		}
+	}
+	for(i=22; i<=32; i++){
+		if(aliens[1][i] < 10000){
+			aliens[0][i] = 100 + ydist+ 2 * 30;
+		}
+	}
+	for(i=33; i<=43; i++){
+		if(aliens[1][i] < 10000){
+			aliens[0][i] = 100 + ydist+ 3 *30;
+		}
+	}
+	for(i=44; i<=54; i++){
+		if(aliens[1][i] < 10000){
+			aliens[0][i] = 100 + ydist + 4*30;
+		}
+	}
+	
+	count = determineSprite(count);
+	if (count < 0 ){ 
+			temp = true;
+		}else{ 
+			temp = false;
+		}
+
+	// hard code x values
+	//now prints row by row
+	for(i=0; i<=10; i++){
+		if(aliens[1][i] < 10000){
+			aliens[1][i] = 100 + xdist + 30*i;
+			gfx_color(255,255,255);//White (classic game)
+
+		//gfx_rectangle(aliens[1][i], aliens[0][i], 20, 20);
+		//^^ original sprites were just squares.
+		
+			if (temp == true){
+				draw_first_Sprite(aliens[1][i], aliens[0][i]);
+			}else{ 
+				draw_first_Sprite2(aliens[1][i],aliens[0][i]);
+			}
+		}
+	}
+	for(i=11; i<=21; i++){
+		if(aliens[1][i] < 10000){
+			aliens[1][i] = 100 + xdist + 30 * (i-11);
+
+			if (temp == true){ 
+				draw_first_Sprite(aliens[1][i], aliens[0][i]);
+			}else{ 
+				draw_first_Sprite2(aliens[1][i],aliens[0][i]);
+			}
+		}
+	}
+	for(i=22; i<=32; i++){
+		if(aliens[1][i] < 10000){
+			aliens[1][i] = 100 + xdist + 30 * (i-22);
+		
+			if (temp == true){
+				draw_second_Sprite(aliens[1][i], aliens[0][i]);
+			}else{ 
+				draw_second_Sprite2(aliens[1][i],aliens[0][i]);
+			}
+		}
+	}
+	for(i=33; i<=43; i++){
+		if(aliens[1][i] < 10000){
+			aliens[1][i] = 100 + xdist + 30 * (i-33);
+
+			if (temp == true){ 
+				draw_second_Sprite(aliens[1][i], aliens[0][i]);
+			}else{ 
+				draw_second_Sprite2(aliens[1][i],aliens[0][i]);
+			}
+		}
+	}
+	for(i=44; i<=54; i++){
+		if(aliens[1][i] < 10000){
+			aliens[1][i] = 100 + xdist + 30 * (i-44);
+		
+			if (temp == true){ 
+				draw_third_Sprite(aliens[1][i], aliens[0][i]);
+			}else{ 
+				draw_third_Sprite2(aliens[1][i],aliens[0][i]);
+			}
+		}
+	}
+	gfx_flush();
+	return ++count;
+}
+
+int determineSprite(int count){ 
+	if ((count % 30) == 0) count*=-1; //easy way to make the sprites look animated
+
+	return count; 
+}
+void draw_first_Sprite(int x, int y){ //draw one version of sprite 1 (1st, 2nd rows)
+	gfx_color(255,255,255); // white used for sprites
+   
+	gfx_fill_rectangle(x+9,y+2,4,2);
+	gfx_fill_rectangle(x+7,y+4,8,2);
+	gfx_fill_rectangle(x+5,y+6,12,2);
+	gfx_fill_rectangle(x+3,y+8,4,2);
+	gfx_fill_rectangle(x+9,y+8,4,2);
+	gfx_fill_rectangle(x+15,y+8,4,2);
+	gfx_fill_rectangle(x+3,y+10,16,2);
+	gfx_fill_rectangle(x+5,y+12,2,2);
+	gfx_fill_rectangle(x+9,y+12,4,2);
+	gfx_fill_rectangle(x+15,y+12,2,2);
+	gfx_fill_rectangle(x+3,y+14,2,2);
+	gfx_fill_rectangle(x+17,y+14,2,2);
+	gfx_fill_rectangle(x+5,y+16,2,2);
+	gfx_fill_rectangle(x+15,y+16,2,2);
+
+
+}
+void draw_first_Sprite2(int x, int y){ // draw second version for animation
+	gfx_color(255,255,255);
+   
+	gfx_fill_rectangle(x+9,y+2,4,2);
+	gfx_fill_rectangle(x+7,y+4,8,2);
+	gfx_fill_rectangle(x+5,y+6,12,2);
+	gfx_fill_rectangle(x+3,y+8,4,2);
+	gfx_fill_rectangle(x+9,y+8,4,2);
+	gfx_fill_rectangle(x+15,y+8,4,2);
+	gfx_fill_rectangle(x+3,y+10,16,2); //same as other sprite
+
+	gfx_fill_rectangle(x+7,y+12,2,2); //sprite becomes different here
+	gfx_fill_rectangle(x+13,y+12,2,2);
+	gfx_fill_rectangle(x+5,y+14,2,2);
+	gfx_fill_rectangle(x+9,y+14,4,2);
+	gfx_fill_rectangle(x+15,y+14,2,2);
+	gfx_fill_rectangle(x+3,y+16,2,2);
+	gfx_fill_rectangle(x+7,y+16,2,2);
+	gfx_fill_rectangle(x+13,y+16,2,2);
+	gfx_fill_rectangle(x+17,y+16,2,2);
+
+
+
+}
+void draw_second_Sprite(int x, int y){ //same idea, but middle two rows
+	gfx_color(255,255,255);
+
+	gfx_fill_rectangle(x+5,y+2,2,2);
+	gfx_fill_rectangle(x+15,y+2,2,2);
+	gfx_fill_rectangle(x+7,y+4,2,2);
+	gfx_fill_rectangle(x+13,y+4,2,2);
+	gfx_fill_rectangle(x+1,y+4,2,2);
+	gfx_fill_rectangle(x+19,y+4,2,2);
+	gfx_fill_rectangle(x+1,y+6,2,2);
+	gfx_fill_rectangle(x+5,y+6,12,2);
+	gfx_fill_rectangle(x+19,y+6,2,2);
+	gfx_fill_rectangle(x+1,y+8,6,2);
+	gfx_fill_rectangle(x+9,y+8,4,2);
+	gfx_fill_rectangle(x+15,y+8,6,2);
+	gfx_fill_rectangle(x+1,y+10,20,2);
+	gfx_fill_rectangle(x+3,y+12,14,2); // on the line
+	gfx_fill_rectangle(x+5,y+14,2,2);
+	gfx_fill_rectangle(x+15,y+14,2,2);
+	gfx_fill_rectangle(x+3,y+16,2,2);
+	gfx_fill_rectangle(x+17,y+16,2,2);
+	gfx_flush();
+
+}
+void draw_second_Sprite2(int x, int y){ //animated version
+	gfx_color(255,255,255);
+
+	gfx_fill_rectangle(x+5,y+2,2,2);
+	gfx_fill_rectangle(x+15,y+2,2,2);
+	gfx_fill_rectangle(x+7,y+4,2,2);
+	gfx_fill_rectangle(x+13,y+4,2,2);
+	gfx_fill_rectangle(x+5,y+6,12,2);
+	gfx_fill_rectangle(x+3,y+8,4,2);
+	gfx_fill_rectangle(x+9,y+8,4,2);
+	gfx_fill_rectangle(x+15,y+8,4,2);
+	gfx_fill_rectangle(x+1,y+10,20,2);
+	gfx_fill_rectangle(x+1,y+12,2,2); // on the line 
+	gfx_fill_rectangle(x+5,y+12,12,2);
+	gfx_fill_rectangle(x+19,y+12,2,2);
+	gfx_fill_rectangle(x+1,y+14,2,2);
+	gfx_fill_rectangle(x+5,y+14,2,2);
+	gfx_fill_rectangle(x+15,y+14,2,2);
+	gfx_fill_rectangle(x+19,y+14,2,2);
+	gfx_fill_rectangle(x+7,y+16,2,2);
+	gfx_fill_rectangle(x+13,y+16,2,2);
+
+	gfx_flush();
+}
+
+void draw_third_Sprite(int x, int y){ //same idea, bottom row
+	gfx_color(255,255,255);
+
+	gfx_fill_rectangle(x+7,y+2,6,2);
+	gfx_fill_rectangle(x+3,y+4,14,2);
+	gfx_fill_rectangle(x+1,y+6,18,2);
+	gfx_fill_rectangle(x+1,y+8,6,2);
+	gfx_fill_rectangle(x+9,y+8,2,2);
+	gfx_fill_rectangle(x+13,y+8,6,2);
+	gfx_fill_rectangle(x+1,y+10,18,2); // the same both iterations
+
+	gfx_fill_rectangle(x+7,y+12,2,2); //different
+	gfx_fill_rectangle(x+11,y+12,2,2);
+	gfx_fill_rectangle(x+5,y+14,2,2);
+	gfx_fill_rectangle(x+9,y+14,2,2);
+	gfx_fill_rectangle(x+13,y+14,2,2);
+	gfx_fill_rectangle(x+1,y+16,4,2);
+ 	gfx_fill_rectangle(x+15,y+16,4,2);
+
+
+}
+void draw_third_Sprite2(int x, int y){ //animated version
+	gfx_color(255,255,255);
+
+	gfx_fill_rectangle(x+7,y+2,6,2);
+	gfx_fill_rectangle(x+3,y+4,14,2);
+	gfx_fill_rectangle(x+1,y+6,18,2);
+	gfx_fill_rectangle(x+1,y+8,6,2);
+	gfx_fill_rectangle(x+9,y+8,2,2);
+	gfx_fill_rectangle(x+13,y+8,6,2);
+	gfx_fill_rectangle(x+1,y+10,18,2); // the same both iterations
+
+	gfx_fill_rectangle(x+5,y+12,4,2);
+	gfx_fill_rectangle(x+11,y+12,4,2);
+	gfx_fill_rectangle(x+3,y+14,4,2);
+	gfx_fill_rectangle(x+9,y+14,2,2);
+	gfx_fill_rectangle(x+13,y+14,4,2);
+	gfx_fill_rectangle(x+5,y+16,2,2);
+	gfx_fill_rectangle(x+13,y+16,2,2);
+}
+
+
+void uShooter(int xposS){ //draw the user's little shooter
+	gfx_color(24, 238, 0);
+	gfx_fill_rectangle(xposS, YPOS, 30, 12);
+	gfx_fill_rectangle(xposS+4,YPOS-2,23,2);
+	gfx_fill_rectangle(xposS+12,YPOS-7,6,5);
+	gfx_fill_rectangle(xposS+14,YPOS-9,2,2);
+
+	gfx_flush();
+}
+
+void dispScore(int score, int choice){ //display the score
+	// int score needs to be converted to string:)
+	char buffer[20];//to store score in string
+	int temp; // sprintf returns an integer
+	
+	temp = sprintf(buffer,"%d",score);// converts the score into a string to print out
+
+	gfx_color(24, 238, 0);
+	gfx_text(3,10,"SCORE");//to be used to display score
+	gfx_text(25, 20, buffer); //way to update score
+	gfx_fill_rectangle(0,498,800,2);
+
+	if( choice == 1){ 
+			gfx_text(400,250,"YOU WIN!"); //if the user succeeds
+			gfx_text(400,275,"SCORE:");	
+			gfx_text(440,275,buffer);
+	}
+
+	gfx_flush();
+}
+
+
+void drawExplosion(int x, int y, int i){ //draws an explosion
+	unsigned int k;
+
+	if(i == 1) gfx_color(255,255,255); // white explosion for aliens
+	else gfx_color(255,0,0); //red explosion for spaceship
+
+	for(k=0;k<=30;k++){
+		gfx_fill_rectangle(x+6, y, 2, 2); //top part of explosion
+		gfx_fill_rectangle(x+14, y, 2, 2);
+		gfx_fill_rectangle(x+8, y+2, 2, 2);
+		gfx_fill_rectangle(x+12, y+2, 2, 2);
+
+		gfx_fill_rectangle(x+8, y+18, 2, 2); //the bottom symmetric to the top
+		gfx_fill_rectangle(x+12, y+18, 2, 2);
+		gfx_fill_rectangle(x+6, y+20, 2, 2);
+		gfx_fill_rectangle(x+14, y+20, 2, 2);
+
+		gfx_fill_rectangle(x,y+4,2,2);// the left
+		gfx_fill_rectangle(x+2,y+6,2,2);
+		gfx_fill_rectangle(x+4,y+8,2,2);
+		gfx_fill_rectangle(x,y+10,4,2);
+		gfx_fill_rectangle(x+4,y+12,2,2);
+		gfx_fill_rectangle(x+2,y+14,2,2);
+		gfx_fill_rectangle(x,y+16,2,2);
+
+		gfx_fill_rectangle(x+20,y+4,2,2);//the right symmetric to left
+		gfx_fill_rectangle(x+18,y+6,2,2);
+		gfx_fill_rectangle(x+16,y+8,2,2);
+		gfx_fill_rectangle(x+18,y+10,4,2);
+		gfx_fill_rectangle(x+16,y+12,2,2);
+		gfx_fill_rectangle(x+18,y+14,2,2);
+		gfx_fill_rectangle(x,y+20,2,2);
+
+		gfx_flush();
+	}
+}
+
+void liveGraphics(int lives){ //will take in the number of lives, print ships on the number of lives
+	unsigned int i;
+	int x= 650;
+	int y= 30;
+
+	gfx_color(24, 238, 0);
+	gfx_text(600,10,"LIVES");//just text
+
+	for(i=0;i<lives;i++){ //display number of ships based on the number of lives
+
+		gfx_fill_rectangle(x+i*40, y, 30, 12);
+		gfx_fill_rectangle(x+4+i*40,y-2,23,2);
+		gfx_fill_rectangle(x+12+i*40,y-7,6,5);
+		gfx_fill_rectangle(x+14+i*40,y-9,2,2);
+
+	}
+}
+void decLives(int *lives){ //decreases the number of lives
+	*lives-=1;
+}
+int checkifHitAliens(int aliens[2][55],int posB[2][2]){ //check if aliens got shot
+	unsigned int i,j,k;
+	
+	for(k=0;k<55;k++){
+		for(j=0;j<=20;j++){
+			for(i=0;i<=20;i++){
+				if(aliens[0][k]+i == posB[1][0] && aliens[1][k]+j == posB[0][0]){//check coords
+					drawExplosion(aliens[1][k],aliens[0][k], 1);				
+					removeAlien(aliens,k);//remove alien off screen
+					initializeBullets(posB);//reset bullet, take it off the screen
+					return 1;
+				}
+			}
+		}
+	}
+
+	return 0;
+
+}
+void removeAlien(int aliens[2][55], int i){ //removes Alien off screen by setting to null value
+	aliens[0][i] = 100000;
+	aliens[1][i] = 100000;
+
+}
+void updateScore(int *score,int i){ //update score using pointers :)
+	if (i == 1) *score+=20; // alien is hit
+	else *score +=200; //spaceship is hit
+}
+
+int checkifHitUser(int xposS,int AposB[2][2]){ //check if user is hit
+	unsigned int i, j;
+
+	for(j=0;j<=30;j++){
+		for(i=0;i<=12;i++){
+			if( (xposS+j) == AposB[0][0] && (YPOS+i) == AposB[1][0])// do x and y coords match
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int checkifHitShip(int posS[2],int posB[2][2]){ // check if spaceship is hit
+	int x, y;
+	unsigned int i,j;
+	
+	for(j=0;j<=32;j++){
+		for(i=0;i<=14;i++){
+			if( (posS[0]+j) == posB[0][0] && (posS[1]+i) == posB[1][0]){ // simplified right now
+				x = posS[0];
+				y = posS[1]; // to show explosion after ship has been cleared off screen
+
+				posS[0] = 900; //remove ship off screen
+
+				drawExplosion(x, y, 2);
+				drawExplosion(x+20, y, 2);
+				return 1;
+			}
+		}
+	}
+	return 0;
+
+}
+int AliensDestroyed(int aliens[2][55]){// check if all aliens are destroyed
+	unsigned int i;
+	for(i=0;i<55;i++){
+		if (aliens[0][i] < 1000) return 0;
+	}
+	return 1;
+
+}
+void dispMenu(void){ //displays the user menu 
+	unsigned int i;
+	for(i=0;i<80;i++){
+		printf("*");
+	}
+	printf("\nWelcome to the Space Invaders Program!\n");
+	for(i=0;i<80;i++){
+		printf("*");
+	}
+	printf("\nYour spaceship must destroy the invading enemy alien spaceships as they descent on your 8 bit world.\nUse the SPACE bar to fire your gun at them and blow them to pieces.\nUse ‘B’ to move your spaceship left and ’N’ to move your ship right. \nBe careful, as the aliens will fire back at you.\nThe goal is to destroy all aliens before they reach your spaceship.\nBe on the look out for a surprise enemy high in the sky.\nYou have three lives. Use them wisely.\n");
+	for(i=0;i<80;i++){
+		printf("*");
+	}
+	printf("\n\n");
+	
+}
+
